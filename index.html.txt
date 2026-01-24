@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAPS EdTech | Multi-Grade Registry</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Roboto:wght@400;500;700&family=Cinzel:wght@700&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+    <!-- Link to external CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="">
+
+    <!-- --- PREVIEW TOOLBAR --- -->
+    <div id="toolbar">
+        <div>
+            <span class="badge badge-sub" id="grade-badge">No Grade</span>
+            <span id="sub-status" style="margin-left:10px; font-size:0.8rem; color:#ccc;">Sub: Inactive</span>
+        </div>
+        <div>
+            <span class="tb-link" onclick="App.nav('view-hub')">🏠 Hub</span>
+            <span class="tb-link" onclick="App.nav('view-parent')">👪 Parent</span>
+            <span class="tb-link" onclick="App.reset()">↻ Reset</span>
+        </div>
+    </div>
+
+    <!-- 1. MASTER HUB -->
+    <section id="view-hub" class="view active">
+        <div class="header" style="background:#222; border-color:#444;">
+            <div class="nav-bar"><div class="logo" style="color:white;">CAPS Registry <span style="font-size:0.9rem; font-weight:400; opacity:0.7;">| Build v3.0</span></div></div>
+        </div>
+        
+        <!-- GRADE SELECTION PANEL -->
+        <div class="card" style="border-left: 5px solid var(--gold);">
+            <h2>1. Select Grade & Subscription</h2>
+            <p>Choose a grade to load the correct CAPS Phase Logic.</p>
+            
+            <div style="margin-top: 20px;">
+                <label style="font-weight:bold; font-size:0.9rem;">Learner Grade Level:</label>
+                <select id="gradeSelect">
+                    <option value="">-- Select Grade --</option>
+                    <option value="Grade R">Grade R (Foundation Phase)</option>
+                    <option value="Grade 4">Grade 4 (Intermediate Phase)</option>
+                    <option value="Grade 7">Grade 7 (Senior Phase)</option>
+                </select>
+
+                <div class="grid grid-2">
+                    <button class="btn btn-gold" id="btn-subscribe" onclick="App.auth.activateSub()">Activate License</button>
+                    <button class="btn btn-secondary" id="btn-download" onclick="App.offline.download()" disabled>Download Offline Bundle</button>
+                </div>
+            </div>
+            <div id="download-progress" style="margin-top:10px; display:none; color:var(--success); font-weight:bold;">Assets Downloaded to LocalStorage ✅</div>
+        </div>
+
+        <!-- ROLES -->
+        <div class="grid grid-2">
+            <div class="card" onclick="App.nav('view-dashboard')">
+                <h2>🧑‍🎓 Learner Mode</h2>
+                <p>Enter the classroom.</p>
+                <button class="btn" style="margin-top:10px;">Enter Dashboard</button>
+            </div>
+            <div class="card" onclick="App.nav('view-parent')">
+                <h2>👪 Parent Mode</h2>
+                <p>Audit logs & Certificates.</p>
+                <button class="btn btn-secondary" style="margin-top:10px;">View Report</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. DYNAMIC DASHBOARD -->
+    <section id="view-dashboard" class="view">
+        <div class="header"><div class="nav-bar"><div class="logo" onclick="App.nav('view-hub')">My Classroom</div><span class="badge badge-sub" id="dash-badge">Grade ?</span></div></div>
+        
+        <div class="card">
+            <h3>Term 1 Progress</h3>
+            <div style="background:#e0e0e0; height:10px; border-radius:5px; margin-top:10px;">
+                <div id="dash-progress" style="width:0%; background:var(--primary-red); height:100%; transition:1s;"></div>
+            </div>
+        </div>
+
+        <h3>My Subjects</h3>
+        <div class="grid" id="subject-container"></div>
+    </section>
+
+    <!-- 3. LESSON & VIDEO PLAYER -->
+    <section id="view-lesson" class="view">
+        <div class="header"><div class="nav-bar"><div class="logo" onclick="App.nav('view-dashboard')">← Back</div></div></div>
+        
+        <h1 id="lesson-title" style="margin:10px 0 20px;">Lesson Title</h1>
+
+        <!-- TUTOR VIDEO COMPONENT -->
+        <div class="video-container" id="video-player">
+            <div class="play-btn" onclick="App.video.play()">▶</div>
+            <p style="margin-top:10px;">Watch Tutor Video</p>
+        </div>
+
+        <!-- ACTIVITIES -->
+        <div class="card">
+            <h3>Activity</h3>
+            <p id="act-question">Loading...</p>
+            <div id="act-options" class="grid" style="margin-top:15px;"></div>
+            <div id="act-feedback" style="margin-top:15px; padding:10px; display:none; font-weight:bold;"></div>
+            <button class="btn" id="act-submit" style="margin-top:15px;" disabled onclick="App.activity.submit()">Submit Answer</button>
+        </div>
+    </section>
+
+    <!-- 4. PARENT PORTAL -->
+    <section id="view-parent" class="view">
+        <div class="header"><div class="nav-bar"><div class="logo" onclick="App.nav('view-hub')">Parent Portal</div></div></div>
+        
+        <div class="card">
+            <div style="display:flex; justify-content:space-between;">
+                <h3>Learner Status</h3>
+                <span class="badge badge-success" id="parent-sub-status">Inactive</span>
+            </div>
+            <p id="parent-grade-display" style="color:#666; margin-top:5px;">No Grade Selected</p>
+        </div>
+
+        <h3>Academic Audit Log</h3>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#f9f9f9; text-align:left;"><th style="padding:15px;">Lesson Activity</th><th>Status</th></tr>
+                </thead>
+                <tbody id="audit-table-body">
+                    <tr><td style="padding:15px;" colspan="2">No data available.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Link to external JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>

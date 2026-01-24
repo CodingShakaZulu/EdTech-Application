@@ -1,0 +1,249 @@
+// --- STEP 1: GRADE REGISTRY (CAPS STRUCTURE) ---
+const DATA = {
+    subscription: {
+        active: false,
+        grade: null,
+        expiry: null
+    },
+    grades: {
+        "Grade R": {
+            phase: "Foundation",
+            subjects: {
+                literacy: {
+                    name: "Home Language",
+                    lessons: [
+                        { id: "r_l1", title: "Letter Sounds: A & B", passed: false, vid: "vid_r1", activity: { q: "Which letter is for Apple?", opts: ["A", "B", "C"], ans: "A" } }
+                    ]
+                },
+                numeracy: {
+                    name: "Mathematics",
+                    lessons: [
+                        { id: "r_m1", title: "Counting 1–10", passed: false, vid: "vid_r2", activity: { q: "Count the dots: ● ● ●", opts: ["2", "3", "4"], ans: "3" } }
+                    ]
+                }
+            }
+        },
+        "Grade 4": {
+            phase: "Intermediate",
+            subjects: {
+                math: {
+                    name: "Mathematics",
+                    lessons: [
+                        { id: "g4_m1", title: "Whole Numbers", passed: false, vid: "vid_g4_1", activity: { q: "Value of 6 in 600?", opts: ["6", "60", "600"], ans: "600" } },
+                        { id: "g4_m2", title: "Addition & Subtraction", passed: false, vid: "vid_g4_2", activity: { q: "100 + 50 = ?", opts: ["105", "150", "500"], ans: "150" } }
+                    ]
+                },
+                eng: {
+                    name: "English HL",
+                    lessons: [
+                        { id: "g4_e1", title: "Reading Comprehension", passed: false, vid: "vid_g4_3", activity: { q: "Select the Noun", opts: ["Run", "Table", "Quickly"], ans: "Table" } }
+                    ]
+                }
+            }
+        },
+        "Grade 7": {
+            phase: "Senior",
+            subjects: {
+                math: {
+                    name: "Mathematics",
+                    lessons: [
+                        { id: "g7_m1", title: "Integers", passed: false, vid: "vid_g7_1", activity: { q: "-5 + 3 = ?", opts: ["-2", "2", "-8"], ans: "-2" } }
+                    ]
+                },
+                science: {
+                    name: "Natural Sciences",
+                    lessons: [
+                        { id: "g7_s1", title: "Cells & Systems", passed: false, vid: "vid_g7_2", activity: { q: "Basic unit of life?", opts: ["Atom", "Cell", "Tissue"], ans: "Cell" } }
+                    ]
+                }
+            }
+        }
+    }
+};
+
+// --- APP CONTROLLER ---
+const App = {
+    state: { view: 'hub', currentSubKey: null, currentLesson: null },
+
+    nav: function(id) {
+        document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        this.render(id);
+        window.scrollTo(0,0);
+    },
+
+    // --- STEP 2: GRADE SELECTION LOGIC ---
+    auth: {
+        activateSub: function() {
+            const grade = document.getElementById("gradeSelect").value;
+            if (!grade) {
+                alert("Please select a grade first.");
+                return;
+            }
+            DATA.subscription.active = true;
+            DATA.subscription.grade = grade;
+            
+            // UI Updates
+            document.getElementById('btn-subscribe').innerText = `License Active (${grade})`;
+            document.getElementById('btn-subscribe').disabled = true;
+            document.getElementById('btn-download').disabled = false;
+            document.getElementById('sub-status').innerText = "Sub: Active";
+            document.getElementById('sub-status').style.color = "#2E7D32";
+            document.getElementById('grade-badge').innerText = grade;
+            
+            // Apply UX Phase Styling
+            document.body.className = grade === "Grade R" ? "grade-r" : (grade === "Grade 7" ? "grade-7" : "");
+        }
+    },
+
+    offline: {
+        download: function() {
+            document.getElementById('btn-download').innerText = "Downloading...";
+            setTimeout(() => {
+                document.getElementById('btn-download').innerText = "Bundle Saved";
+                document.getElementById('download-progress').style.display = "block";
+            }, 1000);
+        }
+    },
+
+    // --- STEP 3: DYNAMIC DASHBOARD RENDERING ---
+    render: function(viewId) {
+        if (viewId === 'view-dashboard') {
+            if (!DATA.subscription.active) {
+                alert("Please activate a license first.");
+                App.nav('view-hub');
+                return;
+            }
+
+            const grade = DATA.subscription.grade;
+            const subjects = DATA.grades[grade].subjects;
+            const container = document.getElementById('subject-container');
+            const badge = document.getElementById('dash-badge');
+            
+            badge.innerText = grade;
+            
+            // UX Switch: Grade R gets Grid-2 (Big Cards), G7 gets List view
+            container.className = grade === "Grade R" ? "grid grid-2" : "grid"; 
+
+            let html = '';
+            
+            Object.keys(subjects).forEach(subKey => {
+                const sub = subjects[subKey];
+                html += `<div style="margin-bottom:20px;">
+                            <h4 style="color:var(--text-light); text-transform:uppercase; margin-bottom:10px;">${sub.name}</h4>
+                            <div class="${grade === 'Grade R' ? 'grid' : 'grid grid-2'}">`;
+                            
+                sub.lessons.forEach(l => {
+                    html += `
+                    <div class="card" onclick="App.loadLesson('${subKey}', '${l.id}')" style="cursor:pointer; border-left:5px solid ${l.passed ? 'var(--success)' : 'var(--primary-red)'}">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>${l.title}</strong>
+                            ${l.passed ? '✅' : '⭕'}
+                        </div>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+            
+            // Calculate Progress
+            let totalL = 0, passedL = 0;
+            Object.values(subjects).forEach(s => s.lessons.forEach(l => { totalL++; if(l.passed) passedL++; }));
+            document.getElementById('dash-progress').style.width = ((passedL/totalL)*100) + "%";
+        }
+
+        // --- LESSON VIEW ---
+        if (viewId === 'view-lesson') {
+            const grade = DATA.subscription.grade;
+            const subject = DATA.grades[grade].subjects[App.state.currentSubKey];
+            const lesson = subject.lessons.find(l => l.id === App.state.currentLesson);
+            const act = lesson.activity;
+
+            document.getElementById('lesson-title').innerText = lesson.title;
+            document.getElementById('act-question').innerText = act.q;
+            document.getElementById('act-options').innerHTML = act.opts.map(o => 
+                `<button class="btn btn-secondary" onclick="App.activity.selected='${o}'; document.getElementById('act-submit').disabled=false; this.style.background='#eee'">${o}</button>`
+            ).join('');
+        }
+
+        // --- STEP 4: PARENT PORTAL AUDIT ---
+        if (viewId === 'view-parent') {
+            const status = document.getElementById('parent-sub-status');
+            const display = document.getElementById('parent-grade-display');
+            const tbody = document.getElementById('audit-table-body');
+
+            if (DATA.subscription.active) {
+                const grade = DATA.subscription.grade;
+                status.className = "badge badge-success";
+                status.innerText = "Active";
+                display.innerText = `${grade} • CAPS Curriculum`;
+
+                // Generate Audit Rows
+                let rows = '';
+                Object.values(DATA.grades[grade].subjects).forEach(sub => {
+                    sub.lessons.forEach(l => {
+                        rows += `
+                        <tr>
+                            <td style="padding:15px; border-bottom:1px solid #eee;">
+                                <div style="font-weight:bold;">${sub.name}</div>
+                                <div style="font-size:0.8rem; color:#666;">${l.title}</div>
+                            </td>
+                            <td style="border-bottom:1px solid #eee; color:${l.passed ? 'green' : 'red'}">
+                                ${l.passed ? 'PASSED' : 'PENDING'}
+                            </td>
+                        </tr>`;
+                    });
+                });
+                tbody.innerHTML = rows;
+
+            } else {
+                status.className = "badge badge-sub";
+                status.innerText = "Inactive";
+                display.innerText = "No Grade Selected";
+                tbody.innerHTML = '<tr><td style="padding:15px;" colspan="2">Activate license to view records.</td></tr>';
+            }
+        }
+    },
+
+    loadLesson: function(subKey, lessonId) {
+        App.state.currentSubKey = subKey;
+        App.state.currentLesson = lessonId;
+        App.nav('view-lesson');
+    },
+
+    // --- VIDEO & ACTIVITY ---
+    video: {
+        play: function() {
+            const p = document.getElementById('video-player');
+            p.innerHTML = "<h2 style='color:white;'>▶ Playing...</h2>";
+        }
+    },
+
+    activity: {
+        selected: null,
+        submit: function() {
+            const grade = DATA.subscription.grade;
+            const subject = DATA.grades[grade].subjects[App.state.currentSubKey];
+            const lesson = subject.lessons.find(l => l.id === App.state.currentLesson);
+            
+            const isCorrect = this.selected === lesson.activity.ans;
+            const fb = document.getElementById('act-feedback');
+            
+            fb.style.display = 'block';
+            fb.innerText = isCorrect ? "Correct!" : "Try Again";
+            fb.style.color = isCorrect ? "green" : "red";
+
+            if (isCorrect) {
+                lesson.passed = true;
+                document.getElementById('act-submit').disabled = true;
+                setTimeout(() => App.nav('view-dashboard'), 1000);
+            }
+        }
+    },
+
+    reset: function() { location.reload(); }
+};
+
+// Init
+App.nav('view-hub');
